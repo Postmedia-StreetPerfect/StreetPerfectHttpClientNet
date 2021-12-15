@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 // just street perfect models used by StreetPerfect.Client - and the site
 // models represent the input (request) and the output (response) parameters of
 // the low level spaa calls
-namespace StreetPerfect.Models
+namespace StreetPerfect.Http.Models
 {
 	public class SPConst
 	{

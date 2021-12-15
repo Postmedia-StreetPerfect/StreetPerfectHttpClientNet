@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
-namespace StreetPerfect.Models
+namespace StreetPerfect.Http.Models
 {
 	/// <summary>
 	/// I added these here for the REST Client to access

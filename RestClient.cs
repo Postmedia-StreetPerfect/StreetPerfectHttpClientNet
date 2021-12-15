@@ -6,9 +6,9 @@ using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using StreetPerfect;
-using StreetPerfect.Models;
 using Refit;
-
+using StreetPerfect.Http;
+using StreetPerfect.Http.Models;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,8 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
 		{
 			var config = new StreetPerfectRestClientConfig();
 			setconf(config);
-			StreetPerfect.SPTokenService._clientId = config.ClientId;
-			StreetPerfect.SPTokenService._clientSecret = config.ClientSecret;
+			StreetPerfect.Http.SPTokenService._clientId = config.ClientId;
+			StreetPerfect.Http.SPTokenService._clientSecret = config.ClientSecret;
 
 			if (config.ApiVersion < 1)
 				config.ApiVersion = 1;
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
 	}
 }
 
-namespace StreetPerfect
+namespace StreetPerfect.Http
 {
 	public class StreetPerfectRestClientConfig
 	{
