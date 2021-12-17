@@ -6,18 +6,18 @@ using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using StreetPerfect;
-using Refit;
 using StreetPerfect.Http;
-using StreetPerfect.Http.Models;
+using StreetPerfect.Models;
+using Refit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
 	public static class SPConfigServiceCollectionExtensions
 	{
 		public static IServiceCollection AddStreetPerfectClient(
-			 this IServiceCollection services, Action<StreetPerfectRestClientConfig> setconf)
+			 this IServiceCollection services, Action<StreetPerfectHttpClientConfig> setconf)
 		{
-			var config = new StreetPerfectRestClientConfig();
+			var config = new StreetPerfectHttpClientConfig();
 			setconf(config);
 			StreetPerfect.Http.SPTokenService._clientId = config.ClientId;
 			StreetPerfect.Http.SPTokenService._clientSecret = config.ClientSecret;
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.DependencyInjection
 			});
 
 			services.AddTransient<SpRestAuthHandler>();
-			services.AddRefitClient<IStreetPerfectRestClient>().ConfigureHttpClient(c =>
+			services.AddRefitClient<IStreetPerfectHttpClient>().ConfigureHttpClient(c =>
 			{
 				c.BaseAddress = new Uri($"{config.BaseAddress}/{config.ApiVersion}");
 			}).AddHttpMessageHandler<SpRestAuthHandler>();
@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
 namespace StreetPerfect.Http
 {
-	public class StreetPerfectRestClientConfig
+	public class StreetPerfectHttpClientConfig
 	{
 		public string ClientId { get; set; } // deprecated...
 		public string ClientSecret { get; set; }
@@ -70,7 +70,7 @@ namespace StreetPerfect.Http
 	/// <summary>
 	/// refit interface for StreetPerfect rest api
 	/// </summary>
-	public interface IStreetPerfectRestClient
+	public interface IStreetPerfectHttpClient
 	{
 		[Post("/ca/typeahead")]
 		public Task<caTypeaheadResponse> caTypeahead(caTypeaheadRequest req);

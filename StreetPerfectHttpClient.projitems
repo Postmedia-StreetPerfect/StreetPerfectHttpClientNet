@@ -9,9 +9,7 @@
     <Import_RootNamespace>StreetPerfectHttpClient</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)Models.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RestClient.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)TypeaheadModels.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" />
