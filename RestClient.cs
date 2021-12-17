@@ -6,9 +6,9 @@ using System.Text;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using StreetPerfect;
+using Refit;
 using StreetPerfect.Http;
 using StreetPerfect.Models;
-using Refit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
