@@ -105,7 +105,7 @@ namespace StreetPerfect.Http
 		[Get(path: ("/ca/query"))]
 		public Task<GetInfoResponse> GetInfo();
 
-		[Post(path: ("/us/correection"))]
+		[Post(path: ("/us/correction"))]
 		public Task<usCorrectionResponse> usProcessCorrection(usAddressRequest req);
 
 		// just realized I haven't implemented this
@@ -121,7 +121,7 @@ namespace StreetPerfect.Http
 	}
 
 	/// <summary>
-	/// I had to create the token stuff separte so it wouldn't go through the same handler 
+	/// I had to create the token stuff separate so it wouldn't go through the same handler 
 	/// -- that I use to call them!
 	/// end-user doesn't need to call these directly
 	/// </summary>
