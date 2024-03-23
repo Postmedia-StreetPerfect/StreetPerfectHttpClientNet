@@ -28,28 +28,38 @@ namespace Microsoft.Extensions.DependencyInjection
 			// user can set ANY base address themselves
 			if (String.IsNullOrWhiteSpace(config.BaseAddress))
 			{
-				config.BaseAddress = config.UseDevEndpoint ? "https://apidev.streetperfect.com/api" : "https://api.streetperfect.com/api";
-			}
-			else
-			{
-				if (!config.BaseAddress.ToLower().TrimEnd('/').EndsWith("/api"))
-					config.BaseAddress += "/api";
+				config.BaseAddress = "https://api.streetperfect.com/api";
 			}
 
-			services.AddSingleton<ISPTokenService, SPTokenService>();
+			config.BaseAddress = config.BaseAddress.TrimEnd('/');
 
-			// token endpoints have no version component
-			services.AddRefitClient<IStreetPerfectTokenClient>().ConfigureHttpClient(c =>
-			{
-				c.BaseAddress = new Uri(config.BaseAddress);
-			});
+			// always append api if needed
+			if (!config.BaseAddress.ToLower().EndsWith("/api"))
+				config.BaseAddress += "/api";
 
-			services.AddTransient<SpRestAuthHandler>();
-			services.AddRefitClient<IStreetPerfectHttpClient>().ConfigureHttpClient(c =>
+
+			var builder = services.AddRefitClient<IStreetPerfectHttpClient>().ConfigureHttpClient(c =>
 			{
 				c.BaseAddress = new Uri($"{config.BaseAddress}/{config.ApiVersion}");
-			}).AddHttpMessageHandler<SpRestAuthHandler>();
+				c.DefaultRequestHeaders.Add("Accept", "application/json");
+				if (!String.IsNullOrEmpty(config.ApiKey))
+					c.DefaultRequestHeaders.Add("X-Api-Key", config.ApiKey);
+			});
 
+			// jwt enabled only if client id & secret and NOT apikey
+			if (String.IsNullOrEmpty(config.ApiKey)
+				&& !String.IsNullOrEmpty(config.ClientId) && !String.IsNullOrEmpty(config.ClientSecret))
+			{
+				services.AddSingleton<ISPTokenService, SPTokenService>();
+
+				// token endpoints have no version component
+				services.AddRefitClient<IStreetPerfectTokenClient>().ConfigureHttpClient(c =>
+				{
+					c.BaseAddress = new Uri(config.BaseAddress);
+				});
+				services.AddTransient<SpRestAuthHandler>();
+				builder.AddHttpMessageHandler<SpRestAuthHandler>();
+			}
 			return services;
 		}
 	}
@@ -61,8 +71,8 @@ namespace StreetPerfect.Http
 	{
 		public string ClientId { get; set; } // deprecated...
 		public string ClientSecret { get; set; }
+		public string ApiKey { get; set; }
 		public string BaseAddress { get; set; } // this takes priority
-		public bool UseDevEndpoint { get; set; } = false; // default is PRODUCTION
 		public int ApiVersion { get; set; } = 1; // default is 1
 	}
 
@@ -73,50 +83,50 @@ namespace StreetPerfect.Http
 	public interface IStreetPerfectHttpClient
 	{
 		[Post("/ca/typeahead")]
-		public Task<caTypeaheadResponse> caTypeahead(caTypeaheadRequest req);
+		Task<caTypeaheadResponse> caTypeahead(caTypeaheadRequest req);
 
 		[Post("/ca/typeahead/rec")]
-		public Task<caTypeaheadResponse> caTypeaheadRec(caTypeaheadRequest req);
+		Task<caTypeaheadResponse> caTypeaheadRec(caTypeaheadRequest req);
 
 		[Post("/ca/typeahead/fetch")]
-		public Task<caTypeaheadFetchResponse> caTypeaheadFetch(caTypeaheadFetchRequest req);
+		Task<caTypeaheadFetchResponse> caTypeaheadFetch(caTypeaheadFetchRequest req);
 
 		[Post("/ca/fetch")]
-		public Task<caFetchAddressResponse> caFetchAddress(caFetchAddressRequest req);
+		Task<caFetchAddressResponse> caFetchAddress(caFetchAddressRequest req);
 
 		[Post(path: ("/ca/format"))]
-		public Task<caFormatAddressResponse> caFormatAddress(caFormatAddressRequest req);
+		Task<caFormatAddressResponse> caFormatAddress(caFormatAddressRequest req);
 
 		[Post(path: ("/ca/correction"))]
-		public Task<caCorrectionResponse> caProcessCorrection(caAddressRequest req);
+		Task<caCorrectionResponse> caProcessCorrection(caAddressRequest req);
 
 		[Post(path: ("/ca/parse"))]
-		public Task<caParseResponse> caProcessParse(caAddressRequest req);
+		Task<caParseResponse> caProcessParse(caAddressRequest req);
 
 		[Post(path: ("/ca/search"))]
-		public Task<caSearchResponse> caProcessSearch(caAddressRequest req);
+		Task<caSearchResponse> caProcessSearch(caAddressRequest req);
 
 		[Post(path: ("/ca/query"))]
-		public Task<caQueryResponse> caQuery(caQueryRequest req);
+		Task<caQueryResponse> caQuery(caQueryRequest req);
 
 		[Post(path: ("/ca/validate"))]
-		public Task<caValidateAddressResponse> caValidateAddress(caValidateAddressRequest req);
+		Task<caValidateAddressResponse> caValidateAddress(caValidateAddressRequest req);
 
 		[Get(path: ("/ca/query"))]
-		public Task<GetInfoResponse> GetInfo();
+		Task<GetInfoResponse> GetInfo();
 
 		[Post(path: ("/us/correction"))]
-		public Task<usCorrectionResponse> usProcessCorrection(usAddressRequest req);
+		Task<usCorrectionResponse> usProcessCorrection(usAddressRequest req);
 
 		// just realized I haven't implemented this
 		[Post(path: ("/us/x"))]
-		public Task<usDeliveryInformationResponse> usProcessDeliveryInfo(usAddressRequest req);
+		Task<usDeliveryInformationResponse> usProcessDeliveryInfo(usAddressRequest req);
 
 		[Post(path: ("/us/parse"))]
-		public Task<usParseResponse> usProcessParse(usAddressRequest req);
+		Task<usParseResponse> usProcessParse(usAddressRequest req);
 
 		[Post(path: ("/us/search"))]
-		public Task<usSearchResponse> usProcessSearch(usAddressRequest req);
+		Task<usSearchResponse> usProcessSearch(usAddressRequest req);
 
 	}
 
@@ -128,10 +138,10 @@ namespace StreetPerfect.Http
 	public interface IStreetPerfectTokenClient
 	{
 		[Post("/token")]
-		public Task<TokenResponse> GetToken(TokenRequest req);
+		Task<TokenResponse> GetToken(TokenRequest req);
 
 		[Post("/token/refresh")]
-		public Task<TokenResponse> RefreshToken(TokenRefreshRequest req);
+		Task<TokenResponse> RefreshToken(TokenRefreshRequest req);
 	}
 
 
@@ -142,8 +152,8 @@ namespace StreetPerfect.Http
 	/// </summary>
 	public interface ISPTokenService
 	{
-		public Task<TokenResponse> GetToken(bool fForce = false);
-		public Task<TokenResponse> RefreshToken();
+		Task<TokenResponse> GetToken(bool fForce = false);
+		Task<TokenResponse> RefreshToken();
 	}
 
 	public class SPTokenService : ISPTokenService
@@ -168,7 +178,7 @@ namespace StreetPerfect.Http
 		{
 			if (_token == null || fForce)
 			{
-				_token = await _tokenClient.GetToken(new TokenRequest() { ClientId=_clientId, ClientSecret=_clientSecret});
+				_token = await _tokenClient.GetToken(new TokenRequest() { ClientId = _clientId, ClientSecret = _clientSecret });
 				lastRefreshed = DateTime.Now;
 			}
 			else if ((DateTime.Now - lastRefreshed).Minutes > _token.Expires - 2)
@@ -185,7 +195,7 @@ namespace StreetPerfect.Http
 				AccessToken = _token.AccessToken,
 				RefreshToken = _token.RefreshToken,
 			};
-			var resp = await _tokenClient.RefreshToken(req); 
+			var resp = await _tokenClient.RefreshToken(req);
 			if (resp != null && resp.Msg != "ok")
 			{
 				//_lastErrorMsg = resp.Msg;
