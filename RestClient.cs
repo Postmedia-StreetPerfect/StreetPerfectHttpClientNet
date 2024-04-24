@@ -100,8 +100,8 @@ namespace StreetPerfect.Http
 		[Post(path: ("/ca/correction"))]
 		Task<caCorrectionResponse> caProcessCorrectionAsync(caAddressRequest req);
 
-		[Post(path: ("/ca/parse"))]
-		Task<caParseResponse> caProcessParseAsync(caAddressRequest req);
+		[Post(path: ("/ca/parse/{parse_op}"))]
+		Task<caParseResponse> caProcessParse(caAddressRequest req, string parse_op);
 
 		[Post(path: ("/ca/search"))]
 		Task<caSearchResponse> caProcessSearchAsync(caAddressRequest req);
