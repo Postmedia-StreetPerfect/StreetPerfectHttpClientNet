@@ -83,50 +83,50 @@ namespace StreetPerfect.Http
 	public interface IStreetPerfectHttpClient
 	{
 		[Post("/ca/typeahead")]
-		Task<caTypeaheadResponse> caTypeahead(caTypeaheadRequest req);
+		Task<caTypeaheadResponse> caTypeaheadAsync(caTypeaheadRequest req);
 
 		[Post("/ca/typeahead/rec")]
-		Task<caTypeaheadResponse> caTypeaheadRec(caTypeaheadRequest req);
+		Task<caTypeaheadResponse> caTypeaheadRecAsync(caTypeaheadRequest req);
 
 		[Post("/ca/typeahead/fetch")]
-		Task<caTypeaheadFetchResponse> caTypeaheadFetch(caTypeaheadFetchRequest req);
+		Task<caTypeaheadFetchResponse> caTypeaheadFetchAsync(caTypeaheadFetchRequest req);
 
 		[Post("/ca/fetch")]
-		Task<caFetchAddressResponse> caFetchAddress(caFetchAddressRequest req);
+		Task<caFetchAddressResponse> caFetchAddressAsync(caFetchAddressRequest req);
 
 		[Post(path: ("/ca/format"))]
-		Task<caFormatAddressResponse> caFormatAddress(caFormatAddressRequest req);
+		Task<caFormatAddressResponse> caFormatAddressAsync(caFormatAddressRequest req);
 
 		[Post(path: ("/ca/correction"))]
-		Task<caCorrectionResponse> caProcessCorrection(caAddressRequest req);
+		Task<caCorrectionResponse> caProcessCorrectionAsync(caAddressRequest req);
 
 		[Post(path: ("/ca/parse"))]
-		Task<caParseResponse> caProcessParse(caAddressRequest req);
+		Task<caParseResponse> caProcessParseAsync(caAddressRequest req);
 
 		[Post(path: ("/ca/search"))]
-		Task<caSearchResponse> caProcessSearch(caAddressRequest req);
+		Task<caSearchResponse> caProcessSearchAsync(caAddressRequest req);
 
 		[Post(path: ("/ca/query"))]
-		Task<caQueryResponse> caQuery(caQueryRequest req);
+		Task<caQueryResponse> caQueryAsync(caQueryRequest req);
 
 		[Post(path: ("/ca/validate"))]
-		Task<caValidateAddressResponse> caValidateAddress(caValidateAddressRequest req);
+		Task<caValidateAddressResponse> caValidateAddressAsync(caValidateAddressRequest req);
 
-		[Get(path: ("/ca/query"))]
-		Task<GetInfoResponse> GetInfo();
+		[Get(path: (""))] 
+		Task<GetInfoResponse> GetInfoAsync();
 
 		[Post(path: ("/us/correction"))]
-		Task<usCorrectionResponse> usProcessCorrection(usAddressRequest req);
+		Task<usCorrectionResponse> usProcessCorrectionAsync(usAddressRequest req);
 
 		// just realized I haven't implemented this
 		[Post(path: ("/us/x"))]
-		Task<usDeliveryInformationResponse> usProcessDeliveryInfo(usAddressRequest req);
+		Task<usDeliveryInformationResponse> usProcessDeliveryInfoAsync(usAddressRequest req);
 
 		[Post(path: ("/us/parse"))]
-		Task<usParseResponse> usProcessParse(usAddressRequest req);
+		Task<usParseResponse> usProcessParseAsync(usAddressRequest req);
 
 		[Post(path: ("/us/search"))]
-		Task<usSearchResponse> usProcessSearch(usAddressRequest req);
+		Task<usSearchResponse> usProcessSearchAsync(usAddressRequest req);
 
 	}
 
@@ -138,10 +138,10 @@ namespace StreetPerfect.Http
 	public interface IStreetPerfectTokenClient
 	{
 		[Post("/token")]
-		Task<TokenResponse> GetToken(TokenRequest req);
+		Task<TokenResponse> GetTokenAsync(TokenRequest req);
 
 		[Post("/token/refresh")]
-		Task<TokenResponse> RefreshToken(TokenRefreshRequest req);
+		Task<TokenResponse> RefreshTokenAsync(TokenRefreshRequest req);
 	}
 
 
@@ -152,8 +152,8 @@ namespace StreetPerfect.Http
 	/// </summary>
 	public interface ISPTokenService
 	{
-		Task<TokenResponse> GetToken(bool fForce = false);
-		Task<TokenResponse> RefreshToken();
+		Task<TokenResponse> GetTokenAsync(bool fForce = false);
+		Task<TokenResponse> RefreshTokenAsync();
 	}
 
 	public class SPTokenService : ISPTokenService
@@ -174,28 +174,28 @@ namespace StreetPerfect.Http
 			_tokenClient = tokenService;
 		}
 
-		public async Task<TokenResponse> GetToken(bool fForce = false)
+		public async Task<TokenResponse> GetTokenAsync(bool fForce = false)
 		{
 			if (_token == null || fForce)
 			{
-				_token = await _tokenClient.GetToken(new TokenRequest() { ClientId = _clientId, ClientSecret = _clientSecret });
+				_token = await _tokenClient.GetTokenAsync(new TokenRequest() { ClientId = _clientId, ClientSecret = _clientSecret });
 				lastRefreshed = DateTime.Now;
 			}
 			else if ((DateTime.Now - lastRefreshed).Minutes > _token.Expires - 2)
 			{
-				_token = await RefreshToken();
+				_token = await RefreshTokenAsync();
 			}
 			return _token;
 		}
 
-		public async Task<TokenResponse> RefreshToken()
+		public async Task<TokenResponse> RefreshTokenAsync()
 		{
 			var req = new TokenRefreshRequest()
 			{
 				AccessToken = _token.AccessToken,
 				RefreshToken = _token.RefreshToken,
 			};
-			var resp = await _tokenClient.RefreshToken(req);
+			var resp = await _tokenClient.RefreshTokenAsync(req);
 			if (resp != null && resp.Msg != "ok")
 			{
 				//_lastErrorMsg = resp.Msg;
@@ -209,7 +209,7 @@ namespace StreetPerfect.Http
 
 	/// <summary>
 	/// refit auth handler for handling SP api tokens
-	/// right, we need to call GetToken first....
+	/// right, we need to call GetTokenAsync first....
 	/// </summary>
 	public class SpRestAuthHandler : DelegatingHandler
 	{
@@ -221,7 +221,7 @@ namespace StreetPerfect.Http
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			TokenResponse token = await _tokenService.GetToken();
+			TokenResponse token = await _tokenService.GetTokenAsync();
 			HttpResponseMessage resp = null;
 
 			for (int cnt = 0; cnt < 2 && !cancellationToken.IsCancellationRequested; cnt++)
@@ -232,7 +232,7 @@ namespace StreetPerfect.Http
 				if (resp?.StatusCode == System.Net.HttpStatusCode.Unauthorized)
 				{
 					resp?.Dispose(); // I think we need to do this
-					token = await _tokenService.GetToken(true); // we really should never get here
+					token = await _tokenService.GetTokenAsync(true); // we really should never get here
 				}
 				else
 					break;
